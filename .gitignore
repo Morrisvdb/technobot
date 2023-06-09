@@ -1,2 +1,5 @@
 keys.py
 notes
+dockerfile
+.dockerignore
+__pycache__
