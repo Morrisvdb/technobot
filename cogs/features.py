@@ -100,36 +100,6 @@ class Features(commands.Cog):
                         )
                         await ctx.respond(embed=isRecordedEmbed)
                         db.commit()
-                        
-                        
-                        # print(channel_id)
-                        # message = await bot.get_channel(channel_id).fetch_message(message_id)
-                        # print(message.channel)
-                        # newTypo = Typo(message_url=link, channel_id=ctx.channel.id, guild_id=ctx.guild.id, reporter_id=ctx.author.id)
-                        # db.add(newTypo)
-                        # db.commit()
-                        # typo = db.query(Typo).filter_by(message_url=link).first()
-                        # typoMessage = await bot.get_channel(typo.channel_id).fetch_message(int(message_id))
-
-                        # reported = discord.Embed(
-                        #     title=f"Funny Typo By {bot.get_user(user_id).display_name}!",
-                        #     description=f"""
-                        #     {bot.get_user(typo.user_id).mention}
-                        #     {typoMessage.content}
-                        #     """,
-                        #     color=discord.Color.blue()
-                        #     )
-                        # sendMessage = await bot.get_channel(typoChannel.channel_id).send(f"{typo.message_url}", embed=reported)
-                        # typo.public_msg_id = sendMessage.id
-                        # db.add(typo)
-                        
-                        # messageSendEmbed = discord.Embed(
-                        #     title="Typo Registered!",
-                        #     description="Your typo has been registered.",
-                        #     color=discord.Color.green()
-                        # )
-                        # await ctx.respond(embed=messageSendEmbed)
-                        # db.commit()
                     except sqlalchemy.exc.OperationalError:
                         db_error(ctx)
             else:
