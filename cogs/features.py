@@ -139,48 +139,6 @@ class Features(commands.Cog):
                     colour=discord.Color.orange()
                 )
                 await ctx.respond(embed=embed)
-            
-            @discord.slash_command(name="ewars")
-    @guild_only()
-    async def ewars(self, ctx: discord.ApplicationContext,
-                    action: Option(input_type=str, description="The action you want to perform.", required=True, choices=["declare", "surrender", "peace", "toggle"]),
-                    member: Option(input_type=discord.Member, description="The member you want to declare war on.", required=False)
-                    ):
-        if action == "declare" or "surrender" or "peace":
-            if member is None:
-                noMemberEmbed = discord.Embed(
-                    title="No member provided!",
-                    description="Please provide a member.",
-                    color=discord.Color.orange()
-                )
-                await ctx.respond(embed=noMemberEmbed)
-            else:
-                if action == "declare":
-                    is_declaring = db.query(EWar).filter_by(guild_id=ctx.guild.id, first_user_id=member.id, second_user_id=ctx.author.id).first()
-                    if is_declaring is not None and is_declaring.hasStarted == False:
-                        is_declaring.hasStarted = True
-                        is_declaring.started_on = datetime.datetime.now()
-                        declareEmbed = discord.Embed(
-                            title="War accepted!",
-                            description=f"Sharpen your E's, because \n {ctx.author.mention} has accepted an e-war with {member.mention}.",
-                            color=discord.Color.green()
-                        )
-                        declaredMessage = await ctx.respond(embed=declareEmbed)  
-                        thread = await declaredMessage.create_thread(name=f"{ctx.author.display_name} vs {member.display_name}", auto_archive_duration=1440)
-                        await thread.set_permissions("everyone", send_messages=False)
-                        await thread.send("3")
-                        await asyncio.sleep(1)
-                        await thread.send("2")
-                        await asyncio.sleep(1)
-                        await thread.send("1")
-                        await asyncio.sleep(1)
-                        await thread.send("E")
-                        await thread.set_permissions("everyone", send_messages=True)
-
-                    elif is_declaring is None:
-                        newDeclaration = EWar(guild_id=ctx.guild.id, first_user_id=ctx.author.id, second_user_id=member.id, declared_on=datetime.datetime.now(), hasStarted=False)
-                        db.add(newDeclaration)
-                db.commit()
 
 def setup(bot):
     bot.add_cog(Features(bot))
