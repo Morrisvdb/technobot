@@ -139,8 +139,8 @@ class Features(commands.Cog):
                     colour=discord.Color.orange()
                 )
                 await ctx.respond(embed=embed)
-
-    @discord.slash_command(name="ewars")
+            
+            @discord.slash_command(name="ewars")
     @guild_only()
     async def ewars(self, ctx: discord.ApplicationContext,
                     action: Option(input_type=str, description="The action you want to perform.", required=True, choices=["declare", "surrender", "peace", "toggle"]),
