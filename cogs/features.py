@@ -5,14 +5,16 @@ import sqlalchemy.exc
 
 """Import other functions"""
 from init import db, db_error, bot
-from models import Channel, Typo
+from models import Channel, Typo, User, EWar
 import re
+import datetime
+import asyncio
 
 class Features(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @discord.slash_command(name="sing", description="Create a new thread to sing like you are back in the live chat.", guild_ids=[977513866097479760, 1047234879743611034])
+    @discord.slash_command(name="sing", description="Create a new thread to sing like you are back in the live chat.")
     @guild_only()
     async def sing(self, ctx: discord.ApplicationContext,
     
@@ -38,9 +40,7 @@ class Features(commands.Cog):
             message = await ctx.send(embed=embed)
             await message.create_thread(name=name, auto_archive_duration=int(duration))
 
-    @discord.slash_command(name="typo",
-                           description="Tell the bot when someone made a typo and store the message in the typo's channel.",
-                           guild_ids=[977513866097479760, 1047234879743611034])
+    @discord.slash_command(name="typo", description="Tell the bot when someone made a typo and store the message in the typo's channel.")
     @guild_only()
     async def typo(self, ctx: discord.ApplicationContext,
                    link: Option(input_type=str, description="The message that contains the typo.", required=True)
@@ -74,31 +74,62 @@ class Features(commands.Cog):
                         await ctx.respond(embed=alreadyReportedEmbed)
                 else:
                     try:
-                        newTypo = Typo(message_url=link, channel_id=ctx.channel.id, user_id=ctx.author.id, guild_id=ctx.guild.id, reporter_id=ctx.author.id)
+                        channel_id = int(link.split("/")[5])
+                        message_id = int(link.split("/")[6])
+                        message = await bot.get_channel(channel_id).fetch_message(message_id)
+                        user_id= await bot.get_channel(channel_id).fetch_message(message_id)
+                        newTypo = Typo(message_url=link, channel_id=channel_id, guild_id=ctx.guild.id, reporter_id=ctx.author.id, user_id=user_id.author.id)
                         db.add(newTypo)
-                        db.commit()
-                        typo = db.query(Typo).filter_by(message_url=link).first()
-                        message_id = int(typo.message_url.split("/")[6])
-                        typoMessage = await bot.get_channel(typo.channel_id).fetch_message(int(message_id))
-                        reported = discord.Embed(
-                            title=f"Funny Typo By {bot.get_user(typo.user_id).display_name}!",
+                        reportedEmbed = discord.Embed(
+                            title=f"Typo By {message.author.display_name}!",
                             description=f"""
-                            {bot.get_user(typo.user_id).mention}
-                            {typoMessage.content}
+                            {message.author.mention}
+                            {message.content}
                             """,
                             color=discord.Color.blue()
                             )
-                        sendMessage = await bot.get_channel(typoChannel.channel_id).send(f"{typo.message_url}", embed=reported)
-                        typo.public_msg_id = sendMessage.id
-                        db.add(typo)
-                        
-                        messageSendEmbed = discord.Embed(
+                        typoChannel = db.query(Channel).filter_by(guild_id=ctx.guild.id, channel_type="typo").first()
+                        sendMessage = await bot.get_channel(typoChannel.channel_id).send(embed=reportedEmbed)
+                        newTypo.public_msg_id = sendMessage.id
+                        db.add(newTypo)
+
+                        isRecordedEmbed = discord.Embed(
                             title="Typo Registered!",
                             description="Your typo has been registered.",
                             color=discord.Color.green()
                         )
-                        await ctx.respond(embed=messageSendEmbed)
+                        await ctx.respond(embed=isRecordedEmbed)
                         db.commit()
+                        
+                        
+                        # print(channel_id)
+                        # message = await bot.get_channel(channel_id).fetch_message(message_id)
+                        # print(message.channel)
+                        # newTypo = Typo(message_url=link, channel_id=ctx.channel.id, guild_id=ctx.guild.id, reporter_id=ctx.author.id)
+                        # db.add(newTypo)
+                        # db.commit()
+                        # typo = db.query(Typo).filter_by(message_url=link).first()
+                        # typoMessage = await bot.get_channel(typo.channel_id).fetch_message(int(message_id))
+
+                        # reported = discord.Embed(
+                        #     title=f"Funny Typo By {bot.get_user(user_id).display_name}!",
+                        #     description=f"""
+                        #     {bot.get_user(typo.user_id).mention}
+                        #     {typoMessage.content}
+                        #     """,
+                        #     color=discord.Color.blue()
+                        #     )
+                        # sendMessage = await bot.get_channel(typoChannel.channel_id).send(f"{typo.message_url}", embed=reported)
+                        # typo.public_msg_id = sendMessage.id
+                        # db.add(typo)
+                        
+                        # messageSendEmbed = discord.Embed(
+                        #     title="Typo Registered!",
+                        #     description="Your typo has been registered.",
+                        #     color=discord.Color.green()
+                        # )
+                        # await ctx.respond(embed=messageSendEmbed)
+                        # db.commit()
                     except sqlalchemy.exc.OperationalError:
                         db_error(ctx)
             else:
@@ -108,5 +139,48 @@ class Features(commands.Cog):
                     colour=discord.Color.orange()
                 )
                 await ctx.respond(embed=embed)
+
+    @discord.slash_command(name="ewars")
+    @guild_only()
+    async def ewars(self, ctx: discord.ApplicationContext,
+                    action: Option(input_type=str, description="The action you want to perform.", required=True, choices=["declare", "surrender", "peace", "toggle"]),
+                    member: Option(input_type=discord.Member, description="The member you want to declare war on.", required=False)
+                    ):
+        if action == "declare" or "surrender" or "peace":
+            if member is None:
+                noMemberEmbed = discord.Embed(
+                    title="No member provided!",
+                    description="Please provide a member.",
+                    color=discord.Color.orange()
+                )
+                await ctx.respond(embed=noMemberEmbed)
+            else:
+                if action == "declare":
+                    is_declaring = db.query(EWar).filter_by(guild_id=ctx.guild.id, first_user_id=member.id, second_user_id=ctx.author.id).first()
+                    if is_declaring is not None and is_declaring.hasStarted == False:
+                        is_declaring.hasStarted = True
+                        is_declaring.started_on = datetime.datetime.now()
+                        declareEmbed = discord.Embed(
+                            title="War accepted!",
+                            description=f"Sharpen your E's, because \n {ctx.author.mention} has accepted an e-war with {member.mention}.",
+                            color=discord.Color.green()
+                        )
+                        declaredMessage = await ctx.respond(embed=declareEmbed)  
+                        thread = await declaredMessage.create_thread(name=f"{ctx.author.display_name} vs {member.display_name}", auto_archive_duration=1440)
+                        await thread.set_permissions("everyone", send_messages=False)
+                        await thread.send("3")
+                        await asyncio.sleep(1)
+                        await thread.send("2")
+                        await asyncio.sleep(1)
+                        await thread.send("1")
+                        await asyncio.sleep(1)
+                        await thread.send("E")
+                        await thread.set_permissions("everyone", send_messages=True)
+
+                    elif is_declaring is None:
+                        newDeclaration = EWar(guild_id=ctx.guild.id, first_user_id=ctx.author.id, second_user_id=member.id, declared_on=datetime.datetime.now(), hasStarted=False)
+                        db.add(newDeclaration)
+                db.commit()
+
 def setup(bot):
     bot.add_cog(Features(bot))

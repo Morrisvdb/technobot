@@ -3,7 +3,4 @@ notes
 dockerfile
 .dockerignore
 __pycache__
-<<<<<<< HEAD
 /data
-=======
->>>>>>> parent of 8238472 (Updated files for new server and added dockerfile.)
