@@ -17,7 +17,7 @@ async def on_ready():
     print("------")
     print("Bot is ready!")
     print("Logged in as:")
-    print(f"{bot.user.name}#{bot.user.discriminator}")
+    print(f"{bot.user.name}{bot.user.discriminator}")
     print(f"ID: {bot.user.id}")
     print("------")
 

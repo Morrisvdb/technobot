@@ -1,8 +1,6 @@
 """Import other functions"""
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
-# from sqlachemy.orm import relationship
+from sqlalchemy import Column, Integer, String
 from init import Base, engine
-import datetime
 
 
 class User(Base):
@@ -10,7 +8,7 @@ class User(Base):
     __tablename__ = "User"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, unique=True)
-    e_exp = Column(Integer, default=0)
+    e_exp = Column(Integer)
 
 class Channel(Base):
     """registers channel features"""
@@ -33,20 +31,5 @@ class Typo(Base):
     reporter_id = Column(Integer)
     public_msg_id = Column(Integer)
     blocked = Column(Integer)
-    
-class EWar(Base):
-    __tablename__ = "EWar"
-    id = Column(Integer, primary_key=True, index=True)
-    guild_id = Column(Integer)
-    first_user_id = Column(Integer, ForeignKey("User.id"))
-    second_user_id = Column(Integer, ForeignKey("User.id"))
-    started_on = Column(DateTime)
-    declared_on = Column(DateTime)
-    has_ended = Column(Boolean, default=False)
-    thread_id = Column(Integer)
-    surrenderer_id = Column(Integer, default=None)
-    winner_id = Column(Integer, default=None)
-    isDraw = Column(Boolean)
-    hasStarted = Column(Boolean, default=False)
 
 Base.metadata.create_all(engine)

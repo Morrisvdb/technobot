@@ -12,14 +12,14 @@ class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @discord.slash_command(name="remove-typo", description="Remove a typo from the typo channel.")
+    @discord.slash_command(name="remove-typo", description="Remove a typo from the typo channel.", guild_ids=[977513866097479760, 1047234879743611034])
     @guild_only()
     @commands.has_permissions(manage_messages=True)
     async def removeTypo(self, ctx: discord.ApplicationContext,
                          link: Option(input_type=str, description="The message that contains the typo.", required=True),
                          block: Option(input_type=str, description="Whether or not to block this typo form being registered again.", required=False, choices=["yes", "no"])):
         typoChannel = db.query(Channel).filter_by(
-            guild_id=ctx.guild.id, channel_type="typo").first()
+            guild_id=ctx.guild.id, channel_id=ctx.channel.id, channel_type="typo").first()
         if typoChannel is None:
             doesNotExistEmbed = discord.Embed(
                 title="Command is disabled in this server!",
@@ -56,13 +56,5 @@ class Moderation(commands.Cog):
                     color=discord.Color.green()
                 )
                 await ctx.respond(embed=removedEmbed)
-
-    @discord.slash_command(name="say", description="Make the bot say something.")
-    @commands.has_permissions(manage_messages=True)
-    async def say(self, ctx: discord.ApplicationContext,
-                  message: Option(input_type=str, description="The message you want the bot to say.", required=True)):
-        await ctx.respond(message)
-
-
 def setup(bot):
     bot.add_cog(Moderation(bot))
