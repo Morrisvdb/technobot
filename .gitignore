@@ -3,3 +3,4 @@ notes
 dockerfile
 .dockerignore
 __pycache__
+/data

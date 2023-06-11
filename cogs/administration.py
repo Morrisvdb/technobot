@@ -11,8 +11,7 @@ class Administration(commands.Cog):
         self.bot = bot
     
     @discord.slash_command(name="feature",
-                           description="Add a feature to a channel unclocking the commands paired with that feature.",
-                           guild_ids=[977513866097479760, 1047234879743611034])
+                           description="Add a feature to a channel unclocking the commands paired with that feature.")
     @guild_only()
     async def channel_feature(self, ctx: discord.ApplicationContext,
                     action: Option(input_type=str,
