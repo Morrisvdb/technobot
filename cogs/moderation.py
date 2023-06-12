@@ -1,5 +1,5 @@
 import discord
-from discord import Option, guild_only
+from discord import Option, guild_only, SlashCommandOptionType
 from discord.ext import commands
 import sqlalchemy.exc
 """Import other functions"""

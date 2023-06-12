@@ -2,5 +2,5 @@ keys.py
 notes
 dockerfile
 .dockerignore
-__pycache__
 /data
+/__pycache__

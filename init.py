@@ -16,6 +16,7 @@ Base = declarative_base()
 
 # TOKEN = os.environ["DISCORD_TOKEN"]
 bot = commands.Bot(intents=discord.Intents.all(), command_prefix="!")
+eRewards = {"win": 3, "draw": 0, "loss": -1}
 
 
 channelTypes = ["singing", "e-wars", "typo"]
