@@ -5,7 +5,7 @@ import sqlalchemy.exc
 
 """Import other functions"""
 from init import db, db_error, bot
-from models import Channel, Typo, User, EWar
+from models import Channel, Typo, User, EWar, BugReport
 import re
 import datetime
 import asyncio
@@ -109,6 +109,28 @@ class Features(commands.Cog):
                     colour=discord.Color.orange()
                 )
                 await ctx.respond(embed=embed)
+    
+    @commands.slash_command(name="bugreport", description="Report a bug to the bot developers.")
+    async def bugreport(self, ctx: discord.ApplicationContext,
+                        feature: Option(input_type=str, description="The feature that has the bug.", required=True),
+                        description: Option(input_type=str, description="The description of the bug.", required=True),
+                        how: Option(input_type=str, description="How to reproduce the bug.", required=True),
+                        extra: Option(input_type=str, description="Extra information about the bug.", required=False)
+                        ):
+        """Report a bug to the bot developers."""
+        newBugReport = BugReport(reporter_id=ctx.author.id, feature=feature, description=description, how=how, extra=extra)
+        try:
+            db.add(newBugReport)
+            db.commit()
+            reportedEmbed = discord.Embed(
+                title="Bug reported!",
+                description="Your bug has been reported to the bot developers. \n Thank you for your contribution!",
+                colour=discord.Color.green()
+            )
+            await ctx.respond(embed=reportedEmbed)
+        except sqlalchemy.exc.OperationalError:
+            db.rollback()
+            await db_error(ctx)
 
 def setup(bot):
     bot.add_cog(Features(bot))
