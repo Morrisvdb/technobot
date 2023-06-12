@@ -4,7 +4,7 @@ from discord.ext import commands
 import sqlalchemy.exc
 """Import other functions"""
 from init import bot, db, db_error, channelTypes
-from models import Channel
+from models import Channel, BugReport
 
 class Administration(commands.Cog):
     def __init__(self, bot):
@@ -102,6 +102,94 @@ class Administration(commands.Cog):
             )
             await ctx.respond(embed=embed)
         db.commit()
-
+        
+    @discord.slash_command(name="bugs", description="Admin tool for bugreports.", guild_ids=[977513866097479760])
+    async def bug(self, ctx: discord.ApplicationContext,
+                  action: Option(str, description="The action you want to perform.", required=True, choices=["list", "reslove", "inspect"], default="list"),
+                  page: Option(int, description="The page you want to view. Only for the ", required=False),
+                  bug: Option(int, description="The bug you want to inspect.", required=False)):
+        bugs = db.query(BugReport).all()
+        if action == "list":
+            if page is None:
+                missingValueEmbed = discord.Embed(
+                    title="Missing value!",
+                    description="You need to provide a page number.",
+                    color=discord.Color.orange()
+                )
+            else:
+                if bugs is None:
+                    noBugsEmbed = discord.Embed(
+                        title="No bugs reported!",
+                        description="There are no bugs reported.",
+                        color=discord.Color.green()
+                    )
+                    await ctx.respond(embed=noBugsEmbed)
+                else:
+                    embed = discord.Embed(
+                        title="Bug Reports",
+                        description=f"""
+                        **Page {page}**
+                        """,
+                        color=discord.Color.green()
+                    )
+                    for bug in bugs[page*6-6:page*6]:
+                        reporterTrimmed = bot.get_user(bug.reporter_id).display_name[:50]
+                        featureTrimmed = bug.feature[:50]
+                        descriptionTrimmed = bug.description[:50]
+                        howTrimmed = bug.how[:50]
+                        extraTrimmed = bug.extra[:50]
+                        embed.add_field(
+                            name=f"Bug #{bug.id}",
+                            value=f"""
+                            **Reporter:** {reporterTrimmed}
+                            **Feature:** {featureTrimmed}
+                            **Description:** {descriptionTrimmed}
+                            **How to reproduce:** {howTrimmed}
+                            **Extra:** {extraTrimmed}
+                            """,
+                            inline=True
+                        )
+                    await ctx.respond(embed=embed)
+                
+        elif action == "delete":
+            bug = db.query(BugReport).filter_by(id=bug).first()
+            if bug is None:
+                doesNotExistEmbed = discord.Embed(
+                    title="Bug does not exist!",
+                    description=f"The bug with ID {bug} does not exist.",
+                    color=discord.Color.orange()
+                )
+            else:
+                bug.isResolved = True
+                db.add(bug)
+                db.commit()
+                deletedEmbed = discord.Embed(
+                    title="Bug resloved!",
+                    description=f"The bug with ID {bug} has been marked as resolved.",
+                    color=discord.Color.green()
+                )
+                await ctx.respond(embed=deletedEmbed)
+        elif action == "inspect":
+            bug = db.query(BugReport).filter_by(id=bug).first()
+            if bug is None:
+                missingValueEmbed = discord.Embed(
+                    title="Missing value!",
+                    description="You need to provide a bug ID.",
+                    color=discord.Color.orange()
+                )
+                await ctx.respond(embed=missingValueEmbed)
+            else:
+                inspectEmbed = discord.Embed(
+                    title="Bug {bug}",
+                    description=f"""
+                    **Reporter:** {bot.get_user(bug.reporter_id).display_name}
+                    **Feature:** {bug.feature}
+                    **Description:** {bug.description}
+                    **How to reproduce:** {bug.how}
+                    **Extra:** {bug.extra}
+                    """,
+                    color=discord.Color.green()
+                )
+                await ctx.respond(embed=inspectEmbed)
 def setup(bot):
     bot.add_cog(Administration(bot))

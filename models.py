@@ -48,5 +48,16 @@ class EWar(Base):
     winner_id = Column(Integer, default=None)
     isDraw = Column(Boolean)
     hasStarted = Column(Boolean, default=False)
+    
+class BugReport(Base):
+    __tablename__ = "BugReport"
+    id = Column(Integer, primary_key=True, index=True)
+    reporter_id = Column(Integer)
+    dateTime = Column(DateTime, default=datetime.datetime.utcnow)
+    feature = Column(String)
+    description = Column(String)
+    how = Column(String)
+    extra = Column(String)
+    isResolved = Column(Boolean, default=False)
 
 Base.metadata.create_all(engine)
