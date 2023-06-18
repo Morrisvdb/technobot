@@ -1,9 +1,8 @@
 import os
 
 """Imports the client from init.py"""
-from init import bot, db
+from init import bot
 from keys import TOKEN
-from models import Channel, Typo
 
 
 for f in os.listdir("./cogs"):
@@ -20,5 +19,6 @@ async def on_ready():
     print(f"{bot.user.name}#{bot.user.discriminator}")
     print(f"ID: {bot.user.id}")
     print("------")
+    
 
 bot.run(TOKEN)

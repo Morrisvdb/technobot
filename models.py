@@ -59,5 +59,6 @@ class BugReport(Base):
     how = Column(String)
     extra = Column(String)
     isResolved = Column(Boolean, default=False)
+    resolvedMessage = Column(Integer, default=None)
 
 Base.metadata.create_all(engine)

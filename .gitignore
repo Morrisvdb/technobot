@@ -4,3 +4,8 @@ dockerfile
 .dockerignore
 __pycache__
 /data
+Lib/
+Scripts/
+pyvenv.cfg
+ignore/
+Include/
