@@ -3,7 +3,11 @@ import discord
 """Imports the client from init.py"""
 from init import bot, db
 from keys import TOKEN
-from models import EWar
+
+
+features_command_group = discord.SlashCommandGroup("feature", "Add a feature to a channel unlocking the commands paired with that feature.")
+bug_command_group = discord.SlashCommandGroup("bug", "Report and resolve bugs.", guild_ids=[977513866097479760])
+typo_command_group = discord.SlashCommandGroup("typo", "Report a typo to the bot admins.", guild_ids=[977513866097479760])
 
 
 for f in os.listdir("./cogs"):
