@@ -9,3 +9,8 @@ Scripts/
 pyvenv.cfg
 ignore/
 Include/
+__pycache__/
+data/
+Lib/
+Scripts/
+pyvenv.cfg
