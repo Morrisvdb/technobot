@@ -6,7 +6,7 @@ from init import bot, channelTypes, db, db_error
 from models import Channel
 
 
-features_command_group = bot.create_group("function", "Add a feature to a channel unlocking the commands paired with that feature.")
+features_command_group = bot.create_group("feature", "Add a feature to a channel unlocking the commands paired with that feature.")
 
 class Features(discord.Cog):
     def __init__(self, bot):
@@ -50,7 +50,7 @@ class Features(discord.Cog):
                 db_error(ctx)
         db.commit()
 
-    @features_command_group.command()
+    @features_command_group.command(name="remove", description="Remove a feature from a channel locking the commands paired with that feature")
     @guild_only()
     @commands.has_permissions(manage_channels=True)
     async def remove_feature(ctx: discord.ApplicationContext,
@@ -79,7 +79,7 @@ class Features(discord.Cog):
                 db_error(ctx)
         db.commit()
     
-    @features_command_group.command()
+    @features_command_group.command(name="info", description="Get the features added to a channel")
     @guild_only()
     @commands.has_permissions(manage_channels=True)
     async def info_feature(ctx: discord.ApplicationContext):

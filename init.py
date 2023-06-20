@@ -20,6 +20,11 @@ bot = commands.Bot(intents=discord.Intents.all(), command_prefix="!")
 
 channelTypes = ["singing", "e-wars", "typo"]
 
+eRewards = {"win": 3, "loss": -2, "surrender": -1, "draw": 0}
+
+"""The amount of time in seconds between each global check."""
+updateCycle = 1
+
 
 async def db_error(ctx):
     """Sends an embed to the user when there is an error with the database."""
