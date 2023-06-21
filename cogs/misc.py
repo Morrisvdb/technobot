@@ -41,15 +41,6 @@ class Misc(discord.Cog):
     async def say(ctx: discord.ApplicationContext,
                   message: Option(input_type=str, description="The message you want the bot to say.", required=True)):
         await ctx.respond(message)
-    
-    @discord.slash_command(name="test", guild_ids=[977513866097479760])
-    async def test(self, ctx: discord.ApplicationContext):
-        uiview = AcceptWarView()
-        await ctx.respond("Test", view=uiview)
-        
-        await uiview.wait()
-
-        print(uiview.accepted)
 
 def setup(bot):
     bot.add_cog(Misc(bot))

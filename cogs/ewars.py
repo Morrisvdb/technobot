@@ -12,7 +12,6 @@ from UIComponents import AcceptWarView, TruceView
 
 ewars_command_group = bot.create_group("ewars", "E-Wars commands.")
 
-
 async def endWar(war):
     if war.last_message_id is None:
         war.winner_id = war.first_user_id
@@ -25,6 +24,13 @@ async def endWar(war):
         user1.e_exp += eRewards["draw"]
         user2.e_exp += eRewards["draw"]
         db.add(user1, user2)
+        noMessageEmbed = discord.Embed(
+            title="War ended!",
+            description=f"""The war between {bot.get_user(war.first_user_id).mention} and {bot.get_user(war.second_user_id).mention} has ended in a draw!""",
+            color=discord.Color.nitro_pink()
+        )
+        channel = await bot.get_guild(war.guild_id).fetch_channel(war.thread_id)
+        await channel.send(embed=noMessageEmbed)
     else:
         winner_id = war.winner_id
         loser_id = war.loser_id
@@ -36,11 +42,11 @@ async def endWar(war):
         else:
             winner.e_exp += eRewards["win"]
             loser.e_exp += eRewards["loss"]
-        war.hasEnded = True
-        war.ended_on = datetime.datetime.now()
-        db.add(winner)
-        db.add(loser)
-        db.add(war)
+            db.add(winner)
+            db.add(loser)
+    war.hasEnded = True
+    war.ended_on = datetime.datetime.now()
+    db.add(war)
     thread = await bot.get_guild(war.guild_id).fetch_channel(war.thread_id)
     
     await thread.archive(locked=True)
@@ -56,6 +62,7 @@ async def createWar(ctx, first_user, second_user, guild):
     channel = bot.get_channel(eWarChannel.channel_id)
     msg = await channel.send(f"{first_user.mention} vs {second_user.mention}", embed=startedEmbed)
     thread = await msg.create_thread(name=f"{first_user.display_name} vs {second_user.display_name}", auto_archive_duration=60)
+    await thread.edit(locked=True)
     newWar = EWar(guild_id=guild.id, first_user_id=first_user.id, second_user_id=second_user.id, thread_id=thread.id)
     db.add(newWar)
     db.commit()
@@ -68,7 +75,9 @@ async def createWar(ctx, first_user, second_user, guild):
     await asyncio.sleep(1)
     await thread.send("1")
     await asyncio.sleep(1)
-    await thread.send("E")
+    await thread.edit(locked=False)
+    await thread.send("E!")
+    
 
 
 class EWars(discord.Cog):
@@ -321,25 +330,33 @@ class EWars(discord.Cog):
             pass
         else:
             for war in wars:
-                if war.last_message_time + datetime.timedelta(seconds=10) < datetime.datetime.now():
-                    war.hasEnded = True
-                    channel = bot.get_channel(war.thread_id)
-                    message = await channel.fetch_message(war.last_message_id)
-                    war.winner_id = message.author.id
-                    if getWarUser(war_id=war.id, user_id=war.winner_id) == 1:
-                        war.loser_id = war.second_user_id
+                if war.last_message_time + datetime.timedelta(minutes=15) < datetime.datetime.now():
+                    if war.last_message_id is None:
+                        war.hasEnded = True
+                        war.isDraw = True
+                        db.add(war)
+                        db.commit()
+                        await endWar(war=war)
                     else:
-                        war.loser_id = war.first_user_id
-                    db.add(war)
-                    db.commit()
-                    await endWar(war=war)
-                    thread = await bot.get_guild(war.guild_id).fetch_channel(war.thread_id)
-                    endEmbedThread = discord.Embed(
-                        title="War ended!",
-                        description=f"""{bot.get_user(war.winner_id).mention} has won this E-War because {bot.get_user(war.loser_id).mention} held the last 'E' for 15 minutes.""",
-                        color=discord.Color.nitro_pink()
-                    )
-                    await thread.send(embed=endEmbedThread)
+                        war.hasEnded = True
+                        channel = bot.get_channel(war.thread_id)
+                        print(type(channel))
+                        message = await channel.fetch_message(war.last_message_id)
+                        war.winner_id = message.author.id
+                        if getWarUser(war_id=war.id, user_id=war.winner_id) == 1:
+                            war.loser_id = war.second_user_id
+                        else:
+                            war.loser_id = war.first_user_id
+                        db.add(war)
+                        db.commit()
+                        await endWar(war=war)
+                        thread = await bot.get_guild(war.guild_id).fetch_channel(war.thread_id)
+                        endEmbedThread = discord.Embed(
+                            title="War ended!",
+                            description=f"""{bot.get_user(war.winner_id).mention} has won this E-War because {bot.get_user(war.loser_id).mention} held the last 'E' for 15 minutes.""",
+                            color=discord.Color.nitro_pink()
+                        )
+                        await thread.send(embed=endEmbedThread)
                 else:
                     pass
 

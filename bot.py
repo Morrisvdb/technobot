@@ -4,12 +4,6 @@ import discord
 from init import bot, db
 from keys import TOKEN
 
-
-features_command_group = discord.SlashCommandGroup("feature", "Add a feature to a channel unlocking the commands paired with that feature.")
-bug_command_group = discord.SlashCommandGroup("bug", "Report and resolve bugs.", guild_ids=[977513866097479760])
-typo_command_group = discord.SlashCommandGroup("typo", "Report a typo to the bot admins.", guild_ids=[977513866097479760])
-
-
 for f in os.listdir("./cogs"):
     if f.endswith(".py"):
         bot.load_extension(f"cogs.{f[:-3]}")
