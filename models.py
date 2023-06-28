@@ -12,6 +12,22 @@ class User(Base):
     user_id = Column(Integer, unique=True)
     e_exp = Column(Integer, default=0)
 
+class Guild(Base):
+    """registers guilds to keep track of e.g. e-wars"""
+    __tablename__ = "Guild"
+    id = Column(Integer, primary_key=True, index=True)
+    guild_id = Column(Integer, unique=True)
+    max_ewars_server = Column(Integer, default=100) # Maximum number of e-wars per server
+    max_ewars_user = Column(Integer, default=5) # Maximum number of e-wars per user
+    ewars_interval = Column(Integer, default=15*60) # Interval between E Messages
+    ewars_accept_duration = Column(Integer, default=60*5) # Duration of E-War Accept Message
+    ewars_cooldown = Column(Integer, default=60*5) # Cooldown between E-Wars
+    ereward_win = Column(Integer, default=3) # E-War Reward for winning
+    ereward_loss = Column(Integer, default=-1) # E-War Reward for losing
+    ereward_draw = Column(Integer, default=0) # E-War Reward for a draw
+
+
+
 class Channel(Base):
     """registers channel features"""
     __tablename__ = "Channel"
@@ -40,20 +56,22 @@ class EWar(Base):
     guild_id = Column(Integer)
     first_user_id = Column(Integer, ForeignKey("User.id"))
     second_user_id = Column(Integer, ForeignKey("User.id"))
-    started_on = Column(DateTime)
-    declared_on = Column(DateTime)
-    has_ended = Column(Boolean, default=False)
+    started_on = Column(DateTime, default=datetime.datetime.now)
+    ended_on = Column(DateTime)
+    hasEnded = Column(Boolean, default=False)
     thread_id = Column(Integer)
-    surrenderer_id = Column(Integer, default=None)
+    hasSurrendered = Column(Boolean, default=False)
     winner_id = Column(Integer, default=None)
+    loser_id = Column(Integer, default=None)
     isDraw = Column(Boolean)
-    hasStarted = Column(Boolean, default=False)
+    last_message_id = Column(Integer, default=None)
+    last_message_time = Column(DateTime, default=datetime.datetime.now)
     
 class BugReport(Base):
     __tablename__ = "BugReport"
     id = Column(Integer, primary_key=True, index=True)
     reporter_id = Column(Integer)
-    dateTime = Column(DateTime, default=datetime.datetime.utcnow)
+    dateTime = Column(DateTime, default=datetime.datetime.now)
     feature = Column(String, default="")
     description = Column(String, default="")
     how = Column(String, default="")
