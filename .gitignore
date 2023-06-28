@@ -1,15 +1,15 @@
-keys.py
+.env
 notes
 dockerfile
 .dockerignore
 __pycache__
-/data
 Lib/
 Scripts/
 pyvenv.cfg
 ignore/
 Include/
 __pycache__/
+cogs/__pycache__/
 data/
 Lib/
 Scripts/

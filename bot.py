@@ -1,8 +1,8 @@
 import os
 import discord
 """Imports the client from init.py"""
-from init import bot, db
-from keys import TOKEN
+from init import bot, db, DISCORD_BOT_TOKEN
+from functions import createGuild
 
 for f in os.listdir("./cogs"):
     if f.endswith(".py"):
@@ -26,5 +26,9 @@ async def on_application_command_error(ctx, exception):
         await ctx.respond("You do not have the required permissions to run this command.", ephemeral=True)
     else:
         raise exception
+    
+@bot.event
+async def on_guild_join(guild):
+    createGuild(guild.id)
 
-bot.run(TOKEN)
+bot.run(DISCORD_BOT_TOKEN)

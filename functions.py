@@ -1,5 +1,6 @@
 from init import db
-from models import EWar, User
+from models import EWar, User, Guild
+from init import config_values
 
 
 def identifyUserInWar(user1, user2, guild_id):
@@ -26,6 +27,15 @@ def createUser(user_id):
     if exists is None:
         user = User(user_id=user_id)
         db.add(user)
+        db.commit()
+
+def createGuild(guild_id):
+    exists = db.query(Guild).filter_by(guild_id=guild_id).first()
+    # for value in config_values:
+    #     setattr
+    if exists is None:
+        guild = Guild(guild_id=guild_id)
+        db.add(guild)
         db.commit()
 
 def getWarUser(war_id, user_id):

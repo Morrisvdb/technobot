@@ -12,6 +12,22 @@ class User(Base):
     user_id = Column(Integer, unique=True)
     e_exp = Column(Integer, default=0)
 
+class Guild(Base):
+    """registers guilds to keep track of e.g. e-wars"""
+    __tablename__ = "Guild"
+    id = Column(Integer, primary_key=True, index=True)
+    guild_id = Column(Integer, unique=True)
+    max_ewars_server = Column(Integer, default=100) # Maximum number of e-wars per server
+    max_ewars_user = Column(Integer, default=5) # Maximum number of e-wars per user
+    ewars_interval = Column(Integer, default=15*60) # Interval between E Messages
+    ewars_accept_duration = Column(Integer, default=60*5) # Duration of E-War Accept Message
+    ewars_cooldown = Column(Integer, default=60*5) # Cooldown between E-Wars
+    ereward_win = Column(Integer, default=3) # E-War Reward for winning
+    ereward_loss = Column(Integer, default=-1) # E-War Reward for losing
+    ereward_draw = Column(Integer, default=0) # E-War Reward for a draw
+
+
+
 class Channel(Base):
     """registers channel features"""
     __tablename__ = "Channel"

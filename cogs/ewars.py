@@ -1,18 +1,17 @@
 import discord
 from discord import guild_only, Option
 from discord.ext import commands, tasks
-import asyncio
-import datetime
-import sqlalchemy
+import asyncio, datetime, sqlalchemy, time
 """Modular imports"""
-from models import Channel, EWar, User
-from init import db, bot, eRewards, db_error, updateCycle
-from functions import identifyUserInWar, areAtWar, getWarUser, createUser
-from UIComponents import AcceptWarView, TruceView
+from models import Channel, EWar, User, Guild
+from init import db, bot, db_error, updateCycle
+from functions import identifyUserInWar, areAtWar, getWarUser, createUser, createGuild
+from UIComponents import AcceptWarView, TruceView, EWarsHelpView
 
 ewars_command_group = bot.create_group("ewars", "E-Wars commands.")
 
 async def endWar(war):
+    guild = db.query(Guild).filter_by(guild_id=war.guild_id).first()
     if war.last_message_id is None:
         war.winner_id = war.first_user_id
         war.loser_id = war.second_user_id
@@ -21,8 +20,10 @@ async def endWar(war):
     if war.isDraw == True:
         user1 = db.query(User).filter_by(user_id=war.first_user_id).first()
         user2 = db.query(User).filter_by(user_id=war.second_user_id).first()
-        user1.e_exp += eRewards["draw"]
-        user2.e_exp += eRewards["draw"]
+
+        
+        user1.e_exp += guild.ereward_draw
+        user2.e_exp += guild.ereward_draw
         db.add(user1, user2)
         noMessageEmbed = discord.Embed(
             title="War ended!",
@@ -36,12 +37,13 @@ async def endWar(war):
         loser_id = war.loser_id
         winner = db.query(User).filter_by(user_id=winner_id).first()
         loser = db.query(User).filter_by(user_id=loser_id).first()
+        guild 
         if war.hasSurrendered:
-            winner.e_exp += eRewards["win"]
-            loser.e_exp += eRewards["surrender"]
+            winner.e_exp += guild.ereward_win
+            loser.e_exp += guild.ereward_loss
         else:
-            winner.e_exp += eRewards["win"]
-            loser.e_exp += eRewards["loss"]
+            winner.e_exp += guild.ereward_win
+            loser.e_exp += guild.ereward_loss
             db.add(winner)
             db.add(loser)
     war.hasEnded = True
@@ -78,8 +80,6 @@ async def createWar(ctx, first_user, second_user, guild):
     await thread.edit(locked=False)
     await thread.send("E!")
     
-
-
 class EWars(discord.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -89,6 +89,33 @@ class EWars(discord.Cog):
     async def declare_ewar(ctx: discord.ApplicationContext,
                             member: Option(discord.Member, description="The member you want to declare war on.", required=True)
                             ):
+        guild = db.query(Guild).filter_by(guild_id=ctx.guild.id).first()
+        runningWars_count = db.query(EWar).filter_by(guild_id=ctx.guild.id, hasEnded=False).count()
+
+        if runningWars_count >= guild.max_ewars_server:
+            maxEwarsEmbed = discord.Embed(
+                title="Cannot declare!",
+                description=f"""There are already {runningWars_count}/{guild.max_ewars_server} wars running in this server.""",
+                color=discord.Color.orange()
+            )
+            await ctx.respond(embed=maxEwarsEmbed)
+            return
+
+        runningWars = db.query(EWar).filter_by(guild_id=ctx.guild.id, hasEnded=False).all()
+        userWarsCount = 0
+        for war in runningWars:
+            getWarUser(war_id=war.id, user_id=ctx.author.id)
+            if getWarUser is not None:
+                userWarsCount += 1
+        if userWarsCount >= guild.max_ewars_user:
+            maxUserWarsEmbed = discord.Embed(
+                title="Cannot declare!",
+                description=f"""You already have {userWarsCount}/{guild.max_ewars_user} wars running in this server.""",
+                color=discord.Color.orange()
+            )
+            await ctx.respond(embed=maxUserWarsEmbed)
+            return
+        
         if member == ctx.author:
             cannotDeclareEmbed = discord.Embed(
                 title="Cannot declare!",
@@ -97,7 +124,6 @@ class EWars(discord.Cog):
             )
             await ctx.respond(embed=cannotDeclareEmbed)
         else:
-            # TODO: Cap Maximum Amount of running wars per guild
             eWarsChannel = db.query(Channel).filter_by(guild_id=ctx.guild.id, channel_type="e-wars").first()
             if eWarsChannel is None:
                 commandDisabledEmbed = discord.Embed(
@@ -121,13 +147,25 @@ class EWars(discord.Cog):
                         )
                         await ctx.respond(embed=alreadyDeclaredEmbed)
                     else:
+                        # ewars_accept_duration = db.query(ConfigValue).filter_by(guild_id=ctx.guild.id, key="ewars_accept_duration").first()
+                        # if ewars_accept_duration is None: ewars_accept_duration = 180
+                        # else: ewars_accept_duration = int(ewars_accept_duration.value)
+                        try:
+                            acceptTimeFormatted = int(guild.ewars_accept_duration/60)
+                        except:
+                            acceptTimeFormatted = f"{guild.ewars_accept_duration//60}:{guild.ewars_accept_duration%60}"
+                            if guild.ewars_accept_duration%60 < 10:
+                                acceptTimeFormatted += "0"
+
                         declareEmbed = discord.Embed(
                             title="War Declared!",
                             description=f"""{ctx.author.mention} has declared war on {member.mention}.
-                            They have 3 minutes to accept this war.""",
+                            They have {acceptTimeFormatted} minutes to accept this war.""",
                             color=discord.Color.nitro_pink()
                         )
+                        
                         uiview = AcceptWarView(target=member)
+                        uiview.timeout = guild.ewars_accept_duration
                         await ctx.respond(f"{member.mention}", embed=declareEmbed, view=uiview)
 
                         await uiview.wait()
@@ -203,6 +241,7 @@ class EWars(discord.Cog):
                          member: Option(discord.Member, description="The member you want to make peace with.", required=True)
                          ):
         eWarsChannel = db.query(Channel).filter_by(guild_id=ctx.guild.id, channel_type="e-wars").first()
+        guild = db.query(Guild).filter_by(guild_id=war.guild_id).first()
         if eWarsChannel is None:
             notAllowedEmbed = discord.Embed(
                 title="Command disabled!",
@@ -222,6 +261,13 @@ class EWars(discord.Cog):
                 await ctx.respond(embed=notAtWarEmbed)
             else:
                 db.add(war)
+                try:
+                    acceptTimeFormatted = int(guild.ewars_accept_duration/60)
+                except:
+                    acceptTimeFormatted = f"{guild.ewars_accept_duration//60}:{guild.ewars_accept_duration%60}"
+                    if guild.ewars_accept_duration%60 < 10:
+                        acceptTimeFormatted += "0"
+
                 wantsTruceEmbed = discord.Embed(
                     title="Truce requested!",
                     description=f"""{ctx.author.mention} has requested a truce with {member.mention}.
@@ -229,6 +275,7 @@ class EWars(discord.Cog):
                     color=discord.Color.green()
                 )
                 truceUI = TruceView(target=member)
+                truceUI.timeout = guild.ewars_accept_duration
                 await ctx.respond(f"{member.mention}" ,embed=wantsTruceEmbed, view=truceUI)
 
 
@@ -240,7 +287,7 @@ class EWars(discord.Cog):
                     db.add(war)
                     db.commit()
                     
-                    thread = bot.get_guild(war.guild_id).get_channel(war.thread_id)
+                    thread = await bot.fetch_channel(war.thread_id)
                     if ctx.channel != thread:
                         truceEmbedPublic = discord.Embed(
                             title="Truce accepted!",
@@ -259,13 +306,13 @@ class EWars(discord.Cog):
                     db.add(war)
                     db.commit()
                     truceDeniedEmbed = discord.Embed(
-                        title="Truce denied!",
-                        description=f"""{member.mention} has denied {ctx.author.mention}'s truce.
+                        title="Truce declined!",
+                        description=f"""{member.mention} has declined {ctx.author.mention}'s truce.
                         This war will continue to rage on.""",
                         color=discord.Color.nitro_pink()
                     )
                     await ctx.respond(embed=truceDeniedEmbed)
-                    thread = ctx.guild.get_thread(war.thread_id)
+                    thread = await bot.fetch_channel(war.thread_id)
                     truceDeniedEmbedThread = discord.Embed(
                         title="Truce denied!",
                         description=f"""{member.mention} has denied {ctx.author.mention}'s truce.
@@ -274,13 +321,36 @@ class EWars(discord.Cog):
                     )
                     await thread.send(embed=truceDeniedEmbedThread)
 
+    @ewars_command_group.command(name="help", description="Get the e-wars rules and settings, and get help if you need it.")
+    @guild_only()
+    async def help_ewar(ctx: discord.ApplicationContext):
+        helpEmbed = discord.Embed(
+            title="E-Wars help",
+            description="""This is a simple help menu to help you understand and use E-Wars.
+            Use the select item below to navigate the help menu.""",
+            color=discord.Color.nitro_pink()
+        )
+        helpView = EWarsHelpView()
+        await ctx.respond(embed=helpEmbed, view=helpView)
+
+        # await helpView.wait()
+
+        # if helpView.value == "rules":
+        #     print("rules")
+        # elif helpView.value == "idea":
+        #     print("idea")
+        # elif helpView.value == "help":
+        #     print("help")
+        # elif helpView.value == "config":
+        #     print("config")
+
 
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.content.lower() != "e":
             pass
         else:
-            if message.author == bot.user:
+            if message.author != bot.user:
                 war = db.query(EWar).filter_by(thread_id=message.channel.id, hasEnded=False).first()
                 if war is None:
                     pass
@@ -300,7 +370,8 @@ class EWars(discord.Cog):
                             )
                             await message.reply(embed=notYetSupportedEmbed)
                         else:
-                            if war.last_message_time + datetime.timedelta(minutes=15) < datetime.datetime.now():
+                            ewars_interval = db.query(Guild).filter_by(guild_id=war.guild_id).first().ewars_interval # Time in seconds
+                            if war.last_message_time + datetime.timedelta(seconds=ewars_interval) < datetime.datetime.now():
                                 war.hasEnded = True
                                 war.winner_id = await bot.get_channel(war.thread_id).fetch_message(war.last_message_id).author.id
                                 if getWarUser(war_id=war.id, user_id=war.winner_id) == 1:
@@ -313,7 +384,7 @@ class EWars(discord.Cog):
                                 thread = await bot.get_guild(war.guild_id).fetch_channel(war.thread_id)
                                 endEmbedThread = discord.Embed(
                                     title="War ended!",
-                                    description=f"""{bot.get_user(war.winner_id).mention} has won this E-War because {bot.get_user(war.loser_id).mention} held the last 'E' for 15 minutes.""",
+                                    description=f"""{bot.get_user(war.winner_id).mention} has won this E-War because {bot.get_user(war.loser_id).mention} held the last 'E' {time.strftime('%M:%S', time.gmtime(ewars_interval))} minutes.""",
                                     color=discord.Color.nitro_pink()
                                 )
                                 await thread.send(embed=endEmbedThread)
@@ -323,6 +394,8 @@ class EWars(discord.Cog):
                                 db.add(war)
                                 db.commit()
 
+
+# TODO: Test this
     @tasks.loop(seconds=3)
     async def checkAllWars(self):
         wars = db.query(EWar).filter_by(hasEnded=False).all()
@@ -330,7 +403,8 @@ class EWars(discord.Cog):
             pass
         else:
             for war in wars:
-                if war.last_message_time + datetime.timedelta(minutes=15) < datetime.datetime.now():
+                ewars_interval = db.query(Guild).filter_by(guild_id=war.guild_id).first().ewars_interval # Time in seconds
+                if war.last_message_time + datetime.timedelta(seconds=ewars_interval) < datetime.datetime.now():
                     if war.last_message_id is None:
                         war.hasEnded = True
                         war.isDraw = True
@@ -339,8 +413,7 @@ class EWars(discord.Cog):
                         await endWar(war=war)
                     else:
                         war.hasEnded = True
-                        channel = bot.get_channel(war.thread_id)
-                        print(type(channel))
+                        channel = await bot.fetch_channel(war.thread_id)
                         message = await channel.fetch_message(war.last_message_id)
                         war.winner_id = message.author.id
                         if getWarUser(war_id=war.id, user_id=war.winner_id) == 1:
@@ -353,7 +426,7 @@ class EWars(discord.Cog):
                         thread = await bot.get_guild(war.guild_id).fetch_channel(war.thread_id)
                         endEmbedThread = discord.Embed(
                             title="War ended!",
-                            description=f"""{bot.get_user(war.winner_id).mention} has won this E-War because {bot.get_user(war.loser_id).mention} held the last 'E' for 15 minutes.""",
+                            description=f"""{bot.get_user(war.winner_id).mention} has won this E-War because {bot.get_user(war.loser_id).mention} held the last 'E' for {time.strftime('%M:%S', time.gmtime(ewars_interval))} minutes.""",
                             color=discord.Color.nitro_pink()
                         )
                         await thread.send(embed=endEmbedThread)
@@ -363,115 +436,12 @@ class EWars(discord.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """Registers all guilds in the database and starts the checkAllWars loop."""
+        guilds = bot.guilds
+        for guild in guilds:
+            createGuild(guild_id=guild.id)
         self.checkAllWars.start()
 
-    # @commands.Cog.listener()
-    # async def on_message(self, message):
-        
-    #     if message.content.lower() == 'e':
-            
-    #         channel = db.query(EWar).filter_by(thread_id=message.channel.id, hasEnded=False).first()
-    #         if channel is None:
-    #             pass
-    #         else:
-    #             war = db.query(EWar).filter_by(thread_id=message.channel.id).first()
-    #             if war.last_message_id is None:
-    #                 war.last_message_id = message.id
-    #                 war.last_message_time = datetime.datetime.now()
-    #                 db.add(war)
-    #             else:
-    #                 print("bleep")
-    #                 if message.author.id == war.first_user_id or war.second_user_id:
-    #                     if war.last_message_time + datetime.timedelta(minutes=15) < datetime.datetime.now():
-    #                         if message.author.id == war.first_user_id:
-    #                             war.winner_id = war.second_user_id
-    #                             loser = bot.get_user(war.first_user_id)
-    #                             db.add(war)
-    #                         else:
-    #                             war.winner_id = war.first_user_id
-    #                             loser = bot.get_user(war.second_user_id)
-    #                             db.add(war)
-                                
-    #                         war.hasEnded = True
-    #                         winnerObj = db.query(User).filter_by(user_id=war.winner_id).first()
-    #                         loserObj = db.query(User).filter_by(user_id=war.loser_id).first()
-    #                         winnerObj.e_exp += eRewards["win"]
-    #                         loserObj.e_exp += eRewards["loss"]
-    #                         db.add_all(winnerObj, loserObj)
-    #                         endEmbed = discord.Embed(
-    #                             title="E-War ended!",
-    #                             description=f"""The E-War between {bot.get_user(war.first_user_id).mention} and {bot.get_user(war.second_user_id).mention} has ended.
-    #                               The winner was {bot.get_user(war.winner_id)} has won.
-    #                               This thread will be closed in 10 seconds.
-    #                               """,
-    #                             color=discord.Color.nitro_pink()
-    #                         )
-    #                         await bot.get_channel(war.thread_id).send(embed=endEmbed)
-    #                         await asyncio.sleep(10)
-    #                         await bot.get_channel(war.thread_id).delete()
-    #                     else:
-    #                         war.last_message_id = message.id
-    #                         war.last_message_time = datetime.datetime.now()
-    #                         db.add(war)
-    #                 else:
-    #                     notYetSupportedEmbed = discord.Embed(
-    #                         title="Not yet supported!",
-    #                         description="E-Wars do not yet support third parties.",
-    #                         color=discord.Color.orange()
-    #                     )
-    #                     await message.channel.send(embed=notYetSupportedEmbed, empheral=True)
-    #             db.commit()
-                        
-    # @tasks.loop(seconds=10)
-    # async def check_e_wars(self):
-    #     allWars = db.query(EWar).filter_by(hasStarted=True, hasEnded=False).all()
-    #     for war in allWars:
-    #         if war.hasStarted:   
-    #             if war.last_message_time + datetime.timedelta(seconds=10) < datetime.datetime.now():
-    #                 war.hasEnded = True
-    #                 war.ended_on = datetime.datetime.now()
-    #                 channel = bot.get_channel(war.thread_id)
-    #                 winner_message = await channel.fetch_message(war.last_message_id)
-    #                 war.winner_id = winner_message.author.id
-    #                 if db.query(EWar).filter_by(first_user_id=war.winner_id).first():
-    #                     loser = war.second_user_id
-    #                 else:
-    #                     loser = war.first_user_id
-    #                 db.add(war)
-    #                 winnerObj = db.query(User).filter_by(user_id=war.first_user_id).first()
-    #                 if winnerObj is None:
-    #                     newUser = User(user_id=war.first_user_id)
-    #                     db.add(newUser)
-    #                 loserObj = db.query(User).filter_by(user_id=loser).first()
-    #                 if loserObj is None:
-    #                     print("bleep")
-    #                     newUser = User(user_id=loser)
-    #                     db.add(newUser)
-    #                 db.commit()
-
-    #                 # winnerObj = db.query(User).filter_by(user_id=war.winner_id).first()
-    #                 winnerObj.e_exp += eRewards["win"]
-    #                 # loserObj = db.query(User).filter_by(user_id=loser).first()
-    #                 loserObj.e_exp += eRewards["loss"]
-    #                 db.add(winnerObj)
-    #                 db.add(loserObj)
-    #                 endEmbed = discord.Embed(
-    #                     title="E-War ended!",
-    #                     description=f"""The E-War between {bot.get_user(war.first_user_id).mention} and {bot.get_user(war.second_user_id).mention} has ended.
-    #                     The winner was {bot.get_user(war.winner_id)}.
-    #                     """,
-    #                     color=discord.Color.nitro_pink()
-    #                 )
-    #                 await bot.get_channel(war.thread_id).send(embed=endEmbed)
-    #                 await asyncio.sleep(10)
-    #                 await bot.get_channel(war.thread_id).delete()
-    #             else:
-    #                 pass
-    #         db.commit()
-
-    # @commands.Cog.listener()
-    # async def on_ready(self):
-    #     self.check_e_wars.start()
 
 def setup(bot):
     bot.add_cog(EWars(bot))

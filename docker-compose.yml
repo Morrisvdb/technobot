@@ -1,10 +1,12 @@
 services:
-  app:
+  bot:
     build: .
     container_name: technobot
-    restart: always
     volumes:
-    - type: bind
-      source: ./data
-      target: /app
- 
+      type: bind
+      source: ./database.db
+      target: /app/
+    environment:
+      - DISCORD_BOT_TOKEN=
+
+# docker run --name technobot --mount type=bind,source="$(pwd)"/data/database.db,target=/app/database.db [IMAGE-NAME]

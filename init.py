@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -17,10 +18,13 @@ Base = declarative_base()
 # TOKEN = os.environ["DISCORD_TOKEN"]
 bot = commands.Bot(intents=discord.Intents.all(), command_prefix="!")
 
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
-channelTypes = ["singing", "e-wars", "typo"]
+DISCORD_BOT_TOKEN = "MTA2NDYxNDE4NjcxOTY0OTgwMg.GEN5xy.Lt47DsP32h1l8Xg1ud2sM5Y1E0zcgt08XWOa7E" # os.environ.get("DISCORD_BOT_TOKEN")
 
-eRewards = {"win": 3, "loss": -2, "surrender": -1, "draw": 0}
+channelTypes = ["singing", "e-wars", "typo", "bugs"]
+
+config_values = ["max_ewars_server", "max_ewars_user", "ewars_interval", "ewars_accept_duration", "ereward_win", "ereward_loss", "ereward_surrender", "ereward_draw"]
 
 """The amount of time in seconds between each global check."""
 updateCycle = 1
