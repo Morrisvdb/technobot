@@ -6,8 +6,9 @@ import sqlalchemy
 from init import db, db_error, bot
 from models import BugReport, Channel
 
-user_report_command_group = bot.create_group("report", "Reports suggestions bug and other users.")
 bug_command_group = bot.create_group("bug", "Report and resolve bugs.")
+suggestion_command_group = bot.create_group("suggest", "Suggest new features.")
+user_report_command_group = bot.create_group("report", "Reports suggestions bug and other users.")
 
 # TODO: Add suggestions and player-reports
 
@@ -204,6 +205,37 @@ Sincerely,
                 color=discord.Color.green()
             )
             await ctx.respond(embed=inspectEmbed)
+
+    @suggestion_command_group.command(name="suggest", description="Delete a suggestion.")
+    @commands.has_permissions(administrator=True)
+    async def suggest(ctx: discord.ApplicationContext,
+                        suggestion: Option(input_type=str, description="The suggestion you want to suggest.", required=True)
+                        ):
+            """Suggest a feature to the bot developers."""
+            newSuggestion = Suggestion(suggester_id=ctx.author.id, suggestion=suggestion)
+            suggestionsChannel = db.query(Channel).filter_by(guild_id=ctx.guild.id, channel_type="suggestions").first()
+            try:
+                db.add(newSuggestion)
+                db.commit()
+                if suggestionsChannel is not None:
+                    adminEmbed = discord.Embed(
+                        title="New suggestion!",
+                        description=f"""
+                        **Suggester:** {ctx.author.display_name}
+                        **Suggestion:** {suggestion}
+                        """,
+                        color=discord.Color.blue()
+                    )
+                    await bot.get_channel(suggestionsChannel.channel_id).send(embed=adminEmbed)
+                suggestedEmbed = discord.Embed(
+                    title="Suggestion suggested!",
+                    description="Your suggestion has been suggested to the bot developers. \n Thank you for your contribution!",
+                    color=discord.Color.green()
+                )
+                await ctx.respond(embed=suggestedEmbed)
+            except sqlalchemy.exc.OperationalError:
+                db.rollback()
+                await db_error(ctx)
 
 def setup(bot):
     bot.add_cog(Report(bot))

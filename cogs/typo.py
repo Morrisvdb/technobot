@@ -5,7 +5,7 @@ import sqlalchemy
 import re
 """Modular imports"""
 from init import db, db_error, bot
-from models import Channel, Typo
+from models import Channel, UserTypo
 
 typo_command_group = bot.create_group("typo", "Report and resolve typos.")
 
@@ -13,6 +13,11 @@ class Typo(discord.Cog):
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
+
+    @typo_command_group.command(name="test", description="Block a typo from being reported.")
+    @guild_only()
+    async def test(ctx: discord.ApplicationContext):
+        print(db.query(UserTypo).filter_by(guild_id=ctx.guild.id).first())
 
     @typo_command_group.command(name="add", description="Add a typo to the typo channel.")
     @guild_only()
@@ -30,7 +35,7 @@ class Typo(discord.Cog):
         else:
             validLink = re.search("^https://discord.com/channels/([0-9])+/([0-9])+/([0-9])+", link)
             if validLink:
-                typo = db.query(Typo).filter_by(message_url=link).first()
+                typo = db.query(UserTypo).filter_by(guild_id=ctx.guild.id, message_url=link).first()
                 if typo is not None:
                     if typo.blocked:
                         isBlockedEmbed = discord.Embed(
@@ -52,7 +57,7 @@ class Typo(discord.Cog):
                         message_id = int(link.split("/")[6])
                         message = await bot.get_channel(channel_id).fetch_message(message_id)
                         user_id= await bot.get_channel(channel_id).fetch_message(message_id)
-                        newTypo = Typo(message_url=link, channel_id=channel_id, guild_id=ctx.guild.id, reporter_id=ctx.author.id, user_id=user_id.author.id)
+                        newTypo = UserTypo(message_url=link, channel_id=channel_id, guild_id=ctx.guild.id, reporter_id=ctx.author.id, user_id=user_id.author.id)
                         db.add(newTypo)
                         reportedEmbed = discord.Embed(
                             title=f"Typo By {message.author.display_name}!",

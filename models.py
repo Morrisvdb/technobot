@@ -37,7 +37,7 @@ class Channel(Base):
     # Channel Types:
     # See channelTypes in init.py
 
-class Typo(Base):
+class UserTypo(Base):
     """registers typos"""
     __tablename__ = "Typo"
     id = Column(Integer, primary_key=True, index=True)
@@ -75,6 +75,15 @@ class BugReport(Base):
     description = Column(String, default="")
     how = Column(String, default="")
     extra = Column(String, default="")
+    isResolved = Column(Boolean, default=False)
+    resolvedMessage = Column(Integer, default=None)
+
+class Suggestion(Base):
+    __tablename__ = "Suggestion"
+    id = Column(Integer, primary_key=True, index=True)
+    suggester_id = Column(Integer)
+    dateTime = Column(DateTime, default=datetime.datetime.now)
+    suggestion = Column(String, default="")
     isResolved = Column(Boolean, default=False)
     resolvedMessage = Column(Integer, default=None)
 
@@ -239,10 +248,10 @@ class HelpView(discord.ui.View):
             await interaction.response.edit_message(embed=commandsEmbed, view=self)
 
 def identifyUserInWar(user1, user2, guild_id):
-        war1 = db.query(EWar).filter_by(guild_id=guild_id, first_user_id=user1, second_user_id=user2).first()
+        war1 = db.query(EWar).filter_by(guild_id=guild_id, first_user_id=user1, second_user_id=user2, hasEnded=False).first()
         if war1 is not None:
             return war1
-        war2 = db.query(EWar).filter_by(guild_id=guild_id, first_user_id=user2, second_user_id=user1).first()
+        war2 = db.query(EWar).filter_by(guild_id=guild_id, first_user_id=user2, second_user_id=user1, hasEnded=False).first()
         if war2 is not None:
             return war2
         else:

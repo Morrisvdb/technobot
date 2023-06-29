@@ -219,13 +219,12 @@ class EWars(discord.Cog):
                 db.add(war)
                 db.commit()
                 thread = await bot.get_guild(war.guild_id).fetch_channel(war.thread_id)
-                if ctx.channel != thread:
-                    surrenderedEmbedPublic = discord.Embed(
-                        title="War surrendered!",
-                        description=f"""{ctx.author.mention} has surrendered to {member.mention}.""",
-                        color=discord.Color.green()
-                    )
-                    await ctx.respond(embed=surrenderedEmbedPublic)
+                surrenderedEmbedPublic = discord.Embed(
+                    title="War surrendered!",
+                    description=f"""{ctx.author.mention} has surrendered to {member.mention}.""",
+                    color=discord.Color.green()
+                )
+                await ctx.respond(embed=surrenderedEmbedPublic)
                 surrenderedEmbedThread = discord.Embed(
                     title="War surrendered!",
                     description=f"""{member.mention} has won this E-War because {ctx.author.mention} has surrendered to them.""",

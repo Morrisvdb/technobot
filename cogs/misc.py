@@ -36,7 +36,6 @@ class Misc(discord.Cog):
 
     @discord.slash_command(name="say", description="Make the bot say something.")
     @commands.has_permissions(administrator=True)
-    # TODO: Add an option to disable this command.
     async def say(self, ctx: discord.ApplicationContext,
                   message: Option(input_type=str, description="The message you want the bot to say.", required=True)):
         await ctx.respond(message)
