@@ -2,7 +2,7 @@ import os
 import discord
 """Imports the client from init.py"""
 from init import bot, db, DISCORD_BOT_TOKEN
-from functions import createGuild
+from models import EWar, User, Guild, createGuild
 
 for f in os.listdir("./cogs"):
     if f.endswith(".py"):
