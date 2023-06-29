@@ -54,7 +54,6 @@ class Report(discord.Cog):
                 )
             await ctx.respond(embed=embed)
 
-# TODO: Add a message that is sent to the reporter when the bug is resolved.
     @bug_command_group.command(name="resolve", description="Resolve a bug.")
     @commands.has_permissions(administrator=True)
     async def resolve_bug(ctx: discord.ApplicationContext,

@@ -82,6 +82,8 @@ class EWars(discord.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    # TODO: Add admin tools
+
     @ewars_command_group.command(name="declare", description="Declare war on a member.")
     @guild_only()
     async def declare_ewar(ctx: discord.ApplicationContext,
@@ -232,7 +234,6 @@ class EWars(discord.Cog):
                 await thread.send(embed=surrenderedEmbedThread)
                 await endWar(war=war)
 
-    
     @ewars_command_group.command(name="truce", description="Make peace with a user you are at war with.")
     @guild_only()
     async def truce_ewar(ctx: discord.ApplicationContext,
@@ -342,7 +343,6 @@ class EWars(discord.Cog):
         # elif helpView.value == "config":
         #     print("config")
 
-
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.content.lower() != "e":
@@ -392,8 +392,6 @@ class EWars(discord.Cog):
                                 db.add(war)
                                 db.commit()
 
-
-# TODO: Test this
     @tasks.loop(seconds=3)
     async def checkAllWars(self):
         wars = db.query(EWar).filter_by(hasEnded=False).all()
@@ -430,7 +428,6 @@ class EWars(discord.Cog):
                         await thread.send(embed=endEmbedThread)
                 else:
                     pass
-
 
     @commands.Cog.listener()
     async def on_ready(self):

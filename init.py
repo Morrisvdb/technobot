@@ -6,7 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from discord.ext import commands
 import discord
 
-DATABASE_URL = "sqlite:///database.db"
+basedir = os.path.abspath(os.path.dirname(__file__))
+DATABASE_URL = "sqlite:///"+os.path.join(basedir, "database.db")
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False}, echo=False
@@ -19,8 +20,7 @@ Base = declarative_base()
 bot = commands.Bot(intents=discord.Intents.all(), command_prefix="!")
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
-
-DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
+DISCORD_BOT_TOKEN = str(os.environ.get("DISCORD_BOT_TOKEN"))
 
 channelTypes = ["singing", "e-wars", "typo", "bugs"]
 
@@ -39,4 +39,4 @@ async def db_error(ctx):
         color=discord.Color.red()
     )
     db.rollback()
-    await ctx.send(embed=embed)
+    await ctx.respond(embed=embed)

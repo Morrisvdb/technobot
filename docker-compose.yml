@@ -1,3 +1,5 @@
+version: "3"
+
 services:
   bot:
     build: .
@@ -6,3 +8,4 @@ services:
       - ./:/app:bind
     environment:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+    command: 
