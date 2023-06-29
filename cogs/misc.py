@@ -2,8 +2,7 @@ import discord
 from discord import guild_only, Option
 from discord.ext import commands
 from init import db
-from models import Channel
-from UIComponents import HelpView
+from models import Channel, HelpView
 
 class Misc(discord.Cog):
     def __init__(self, bot):

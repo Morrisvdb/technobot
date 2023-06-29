@@ -3,10 +3,6 @@ services:
     build: .
     container_name: technobot
     volumes:
-      type: bind
-      source: ./database.db
-      target: /app/
+      - ./:/app:bind
     environment:
-      - DISCORD_BOT_TOKEN=
-
-# docker run --name technobot --mount type=bind,source="$(pwd)"/data/database.db,target=/app/database.db [IMAGE-NAME]
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}

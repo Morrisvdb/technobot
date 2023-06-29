@@ -3,10 +3,8 @@ from discord import guild_only, Option
 from discord.ext import commands, tasks
 import asyncio, datetime, sqlalchemy, time
 """Modular imports"""
-from models import Channel, EWar, User, Guild
+from models import Channel, EWar, User, Guild, AcceptWarView, TruceView, EWarsHelpView, identifyUserInWar, areAtWar, getWarUser, createUser, createGuild
 from init import db, bot, db_error, updateCycle
-from functions import identifyUserInWar, areAtWar, getWarUser, createUser, createGuild
-from UIComponents import AcceptWarView, TruceView, EWarsHelpView
 
 ewars_command_group = bot.create_group("ewars", "E-Wars commands.")
 

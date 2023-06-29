@@ -20,7 +20,7 @@ bot = commands.Bot(intents=discord.Intents.all(), command_prefix="!")
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
-DISCORD_BOT_TOKEN = "MTA2NDYxNDE4NjcxOTY0OTgwMg.GEN5xy.Lt47DsP32h1l8Xg1ud2sM5Y1E0zcgt08XWOa7E" # os.environ.get("DISCORD_BOT_TOKEN")
+DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
 
 channelTypes = ["singing", "e-wars", "typo", "bugs"]
 
