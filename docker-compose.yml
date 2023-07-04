@@ -8,4 +8,3 @@ services:
       - ./:/app:bind
     environment:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
-    command: 
