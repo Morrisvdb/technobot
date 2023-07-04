@@ -5,7 +5,9 @@ services:
     build: .
     container_name: technobot
     volumes:
-      - ./:/app:bind
+      - bot-data:/app
     environment:
       - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
-    command: 
+
+volumes:
+  bot-data:

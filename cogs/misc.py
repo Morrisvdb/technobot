@@ -7,7 +7,7 @@ from models import Channel, HelpView
 class Misc(discord.Cog):
     def __init__(self, bot):
         self.bot = bot
-    
+
     @discord.slash_command(name="sing", description="Create a new thread to sing like you are back in the live chat.")
     @guild_only()
     async def sing(self, ctx: discord.ApplicationContext,

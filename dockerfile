@@ -2,8 +2,6 @@ FROM python:3
 
 WORKDIR /app
 
-ENV DISCORD_BOT_TOKEN=
-
 RUN pip install --upgrade pip
 
 RUN pip install sqlalchemy py-cord python-dotenv
