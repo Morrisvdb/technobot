@@ -19,7 +19,6 @@ async def on_ready():
     print(f"ID: {bot.user.id}")
     print("------")
 
-
 @bot.event
 async def on_application_command_error(ctx, exception):
     if isinstance(exception, discord.ext.commands.errors.MissingPermissions):
