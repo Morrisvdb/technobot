@@ -14,16 +14,11 @@ class Typo(discord.Cog):
         super().__init__()
         self.bot = bot
 
-    @typo_command_group.command(name="test", description="Block a typo from being reported.")
-    @guild_only()
-    async def test(ctx: discord.ApplicationContext):
-        print(db.query(UserTypo).filter_by(guild_id=ctx.guild.id).first())
-
     @typo_command_group.command(name="add", description="Add a typo to the typo channel.")
     @guild_only()
-    async def add(ctx: discord.ApplicationContext,
-                  link: Option(description="The message that contains the typo.", required=True)
-                ):
+    async def add(ctx: discord.ApplicationContext, link: Option(description="The message that contains the typo.", required=True)):
+        await ctx.respond(link)
+        
         typoChannel = db.query(Channel).filter_by(guild_id=ctx.guild.id, channel_type="typo").first()
         if typoChannel is None:
             embed = discord.Embed(
