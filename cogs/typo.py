@@ -110,7 +110,7 @@ class Typo(discord.Cog):
             )
             await ctx.respond(embed=doesNotExistEmbed)
         else:
-            typo = db.query(Typo).filter_by(message_url=link).first()
+            typo = db.query(UserTypo).filter_by(message_url=link).first()
             if typo is None:
                 doesNotExistEmbed = discord.Embed(
                     title="Typo not found!",
